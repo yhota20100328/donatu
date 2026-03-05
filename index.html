@@ -2,190 +2,198 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>本格ガチャゲーム</title>
-
+<title>ババ抜きゲーム</title>
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:linear-gradient(135deg,#141e30,#243b55);
-    color:white;
-    text-align:center;
+body {
+    font-family: sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
 }
 
-h1{ margin-top:20px; }
-
-.status{
-    margin-top:10px;
-    font-size:18px;
+h1 {
+    margin-top: 20px;
 }
 
-.gacha-box{
-    margin:30px auto;
-    width:90%;
-    max-width:360px;
-    min-height:150px;
-    background:rgba(255,255,255,0.1);
-    border-radius:20px;
-    padding:20px;
-    box-shadow:0 0 20px rgba(0,0,0,0.4);
+.area {
+    margin: 20px;
 }
 
-.result-item{ margin:5px 0; }
-
-.SSR{ color:gold; font-weight:bold; }
-.SR{ color:violet; }
-.R{ color:skyblue; }
-.N{ color:lightgray; }
-
-button{
-    padding:10px 20px;
-    margin:8px;
-    font-size:16px;
-    border:none;
-    border-radius:25px;
-    cursor:pointer;
-    font-weight:bold;
+.cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.single{ background:gold; color:black; }
-.ten{ background:crimson; color:white; }
-.reset{ background:gray; color:white; }
+.card {
+    width: 60px;
+    height: 90px;
+    background: white;
+    color: black;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
 
-.buy-small{ background:#4caf50; color:white; }
-.buy-medium{ background:#2196f3; color:white; }
-.buy-large{ background:#9c27b0; color:white; }
+.card:hover {
+    transform: scale(1.1);
+}
 
-button:hover{ transform:scale(1.05); }
+.back {
+    background: gray;
+    color: gray;
+    cursor: pointer;
+}
 
-.log{
-    margin-top:15px;
-    max-height:150px;
-    overflow-y:auto;
-    font-size:14px;
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#message {
+    margin-top: 20px;
+    font-size: 18px;
 }
 </style>
 </head>
-
 <body>
 
-<h1>✨ 本格スマホ風ガチャ ✨</h1>
+<h1>🎴 ババ抜きゲーム</h1>
 
-<div class="status">
-💎 所持石：<span id="stones"></span>
+<div class="area">
+    <h2>あなたの手札</h2>
+    <div id="playerCards" class="cards"></div>
 </div>
 
-<div class="gacha-box" id="result">
-ここに結果が表示されます
+<div class="area">
+    <h2>CPUの手札</h2>
+    <div id="cpuCards" class="cards"></div>
 </div>
 
-<button class="single" onclick="singleDraw()">単発（50石）</button>
-<button class="ten" onclick="tenDraw()">🔥10連（500石）</button>
-<button class="reset" onclick="resetStones()">🔄 リセット</button>
+<button onclick="startGame()">ゲーム開始</button>
 
-<h3>💰 石購入（疑似課金）</h3>
-<button class="buy-small" onclick="buyStones(100)">🪙 +100石</button>
-<button class="buy-medium" onclick="buyStones(1000)">💎 +1000石</button>
-<button class="buy-large" onclick="buyStones(5000)">👑 +5000石</button>
-
-<div class="log" id="log"></div>
+<div id="message"></div>
 
 <script>
-const characters=[
-    {name:"伝説の勇者",rarity:"SSR",rate:5},
-    {name:"闇の魔導士",rarity:"SR",rate:15},
-    {name:"王国騎士",rarity:"R",rate:30},
-    {name:"村人A",rarity:"N",rate:50}
-];
+let player = [];
+let cpu = [];
+let playerTurn = true;
 
-const INITIAL_STONES = 500;
-const SINGLE_COST = 50;
-const TEN_COST = 500;
+function createDeck() {
+    let suits = ["♠","♥","♦","♣"];
+    let deck = [];
 
-let stones = localStorage.getItem("stones");
-if(stones === null){
-    stones = INITIAL_STONES;
-}else{
-    stones = parseInt(stones);
-}
-updateStoneDisplay();
-
-function updateStoneDisplay(){
-    document.getElementById("stones").textContent = stones;
-    localStorage.setItem("stones", stones);
-}
-
-function getRandomCharacter(){
-    let rand=Math.random()*100;
-    let sum=0;
-    for(let char of characters){
-        sum+=char.rate;
-        if(rand<=sum){
-            return char;
+    for (let suit of suits) {
+        for (let i = 1; i <= 13; i++) {
+            deck.push({mark: suit, number: i});
         }
     }
+
+    // ジョーカー追加
+    deck.push({mark:"🃏", number: 0});
+
+    return shuffle(deck);
 }
 
-function singleDraw(){
-    if(stones < SINGLE_COST){
-        alert("石が足りません！");
-        return;
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
-    stones -= SINGLE_COST;
-    updateStoneDisplay();
-    showResults([getRandomCharacter()]);
+    return array;
 }
 
-function tenDraw(){
-    if(stones < TEN_COST){
-        alert("石が足りません！");
-        return;
+function removePairs(hand) {
+    let count = {};
+    for (let card of hand) {
+        count[card.number] = (count[card.number] || 0) + 1;
     }
-    stones -= TEN_COST;
-    updateStoneDisplay();
-
-    let results=[];
-    for(let i=0;i<10;i++){
-        results.push(getRandomCharacter());
-    }
-    showResults(results);
+    return hand.filter(card => count[card.number] % 2 !== 0);
 }
 
-function showResults(results){
-    const resultBox=document.getElementById("result");
-    resultBox.innerHTML="";
+function startGame() {
+    let deck = createDeck();
+    player = [];
+    cpu = [];
 
-    results.forEach(r=>{
-        const div=document.createElement("div");
-        div.className="result-item "+r.rarity;
-        div.textContent=r.rarity+"： "+r.name;
-        resultBox.appendChild(div);
+    for (let i = 0; i < deck.length; i++) {
+        if (i % 2 === 0) player.push(deck[i]);
+        else cpu.push(deck[i]);
+    }
+
+    player = removePairs(player);
+    cpu = removePairs(cpu);
+
+    playerTurn = true;
+    render();
+    document.getElementById("message").innerText = "あなたの番です";
+}
+
+function render() {
+    let playerDiv = document.getElementById("playerCards");
+    let cpuDiv = document.getElementById("cpuCards");
+
+    playerDiv.innerHTML = "";
+    cpuDiv.innerHTML = "";
+
+    player.forEach((card, index) => {
+        let div = document.createElement("div");
+        div.className = "card";
+        div.innerText = card.mark === "🃏" ? "🃏" : card.mark + card.number;
+        playerDiv.appendChild(div);
     });
 
-    if(results.some(r=>r.rarity==="SSR")){
-        resultBox.style.boxShadow="0 0 40px gold";
-    }else{
-        resultBox.style.boxShadow="0 0 20px rgba(0,0,0,0.4)";
-    }
-
-    const log=document.getElementById("log");
-    log.innerHTML="▶ "+results.map(r=>r.rarity).join(", ")+"<br>"+log.innerHTML;
+    cpu.forEach((card, index) => {
+        let div = document.createElement("div");
+        div.className = "card back";
+        div.innerText = "■";
+        div.onclick = () => {
+            if (playerTurn) drawFromCPU(index);
+        };
+        cpuDiv.appendChild(div);
+    });
 }
 
-function resetStones(){
-    if(confirm("石を初期値に戻しますか？")){
-        stones = INITIAL_STONES;
-        updateStoneDisplay();
-        alert("リセット完了！");
-    }
+function drawFromCPU(index) {
+    let drawn = cpu.splice(index,1)[0];
+    player.push(drawn);
+    player = removePairs(player);
+
+    playerTurn = false;
+    checkWin();
+    render();
+
+    setTimeout(cpuTurn,1000);
 }
 
-function buyStones(amount){
-    if(confirm(amount+"石を購入しますか？（疑似）")){
-        stones += amount;
-        updateStoneDisplay();
-        alert(amount+"石を購入しました！");
+function cpuTurn() {
+    if (cpu.length === 0 || player.length === 0) return;
+
+    let index = Math.floor(Math.random() * player.length);
+    let drawn = player.splice(index,1)[0];
+    cpu.push(drawn);
+    cpu = removePairs(cpu);
+
+    playerTurn = true;
+    checkWin();
+    render();
+    document.getElementById("message").innerText = "あなたの番です";
+}
+
+function checkWin() {
+    if (player.length === 0) {
+        document.getElementById("message").innerText = "🎉 あなたの勝ち！";
+    } else if (cpu.length === 0) {
+        document.getElementById("message").innerText = "😢 あなたの負け...";
     }
 }
 </script>
