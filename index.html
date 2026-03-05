@@ -32,9 +32,7 @@ h1{ margin-top:20px; }
     box-shadow:0 0 20px rgba(0,0,0,0.4);
 }
 
-.result-item{
-    margin:5px 0;
-}
+.result-item{ margin:5px 0; }
 
 .SSR{ color:gold; font-weight:bold; }
 .SR{ color:violet; }
@@ -42,11 +40,11 @@ h1{ margin-top:20px; }
 .N{ color:lightgray; }
 
 button{
-    padding:12px 25px;
-    margin:10px;
-    font-size:18px;
+    padding:10px 20px;
+    margin:8px;
+    font-size:16px;
     border:none;
-    border-radius:30px;
+    border-radius:25px;
     cursor:pointer;
     font-weight:bold;
 }
@@ -54,6 +52,10 @@ button{
 .single{ background:gold; color:black; }
 .ten{ background:crimson; color:white; }
 .reset{ background:gray; color:white; }
+
+.buy-small{ background:#4caf50; color:white; }
+.buy-medium{ background:#2196f3; color:white; }
+.buy-large{ background:#9c27b0; color:white; }
 
 button:hover{ transform:scale(1.05); }
 
@@ -78,9 +80,14 @@ button:hover{ transform:scale(1.05); }
 ここに結果が表示されます
 </div>
 
-<button class="single" onclick="singleDraw()">単発ガチャ（50石）</button>
-<button class="ten" onclick="tenDraw()">🔥10連ガチャ（500石）</button>
-<button class="reset" onclick="resetStones()">🔄 石を初期値に戻す</button>
+<button class="single" onclick="singleDraw()">単発（50石）</button>
+<button class="ten" onclick="tenDraw()">🔥10連（500石）</button>
+<button class="reset" onclick="resetStones()">🔄 リセット</button>
+
+<h3>💰 石購入（疑似課金）</h3>
+<button class="buy-small" onclick="buyStones(100)">🪙 +100石</button>
+<button class="buy-medium" onclick="buyStones(1000)">💎 +1000石</button>
+<button class="buy-large" onclick="buyStones(5000)">👑 +5000石</button>
 
 <div class="log" id="log"></div>
 
@@ -125,12 +132,9 @@ function singleDraw(){
         alert("石が足りません！");
         return;
     }
-
     stones -= SINGLE_COST;
     updateStoneDisplay();
-
-    let result = getRandomCharacter();
-    showResults([result]);
+    showResults([getRandomCharacter()]);
 }
 
 function tenDraw(){
@@ -138,20 +142,18 @@ function tenDraw(){
         alert("石が足りません！");
         return;
     }
-
     stones -= TEN_COST;
     updateStoneDisplay();
 
-    let results = [];
+    let results=[];
     for(let i=0;i<10;i++){
         results.push(getRandomCharacter());
     }
-
     showResults(results);
 }
 
 function showResults(results){
-    const resultBox = document.getElementById("result");
+    const resultBox=document.getElementById("result");
     resultBox.innerHTML="";
 
     results.forEach(r=>{
@@ -172,10 +174,18 @@ function showResults(results){
 }
 
 function resetStones(){
-    if(confirm("本当に石を初期値に戻しますか？")){
+    if(confirm("石を初期値に戻しますか？")){
         stones = INITIAL_STONES;
         updateStoneDisplay();
-        alert("石を初期値に戻しました！");
+        alert("リセット完了！");
+    }
+}
+
+function buyStones(amount){
+    if(confirm(amount+"石を購入しますか？（疑似）")){
+        stones += amount;
+        updateStoneDisplay();
+        alert(amount+"石を購入しました！");
     }
 }
 </script>
