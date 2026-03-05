@@ -3,77 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スマホ風ガチャゲーム</title>
+<title>本格ガチャゲーム</title>
 
 <style>
 body{
     margin:0;
     font-family:Arial, sans-serif;
-    background:linear-gradient(135deg,#1e3c72,#2a5298);
+    background:linear-gradient(135deg,#141e30,#243b55);
     color:white;
     text-align:center;
 }
 
-h1{
-    margin-top:30px;
+h1{ margin-top:20px; }
+
+.status{
+    margin-top:10px;
+    font-size:18px;
 }
 
 .gacha-box{
-    margin:40px auto;
+    margin:30px auto;
     width:90%;
-    max-width:320px;
-    height:300px;
+    max-width:360px;
+    min-height:150px;
     background:rgba(255,255,255,0.1);
     border-radius:20px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:22px;
-    transition:0.3s;
+    padding:20px;
     box-shadow:0 0 20px rgba(0,0,0,0.4);
 }
 
-.rare-SSR{
-    background:radial-gradient(circle,gold,orange);
-    color:black;
-    box-shadow:0 0 40px gold;
-    animation:shine 1s infinite alternate;
+.result-item{
+    margin:5px 0;
 }
 
-.rare-SR{
-    background:radial-gradient(circle,violet,purple);
-}
-
-.rare-R{
-    background:radial-gradient(circle,skyblue,blue);
-}
-
-.rare-N{
-    background:radial-gradient(circle,lightgray,gray);
-}
+.SSR{ color:gold; font-weight:bold; }
+.SR{ color:violet; }
+.R{ color:skyblue; }
+.N{ color:lightgray; }
 
 button{
-    padding:15px 40px;
-    font-size:20px;
+    padding:12px 25px;
+    margin:10px;
+    font-size:18px;
     border:none;
-    border-radius:50px;
+    border-radius:30px;
     cursor:pointer;
-    background:gold;
-    color:black;
     font-weight:bold;
 }
 
-button:hover{
-    transform:scale(1.1);
-}
+.single{ background:gold; color:black; }
+.ten{ background:crimson; color:white; }
+.reset{ background:gray; color:white; }
 
-@keyframes shine{
-    from{transform:scale(1);}
-    to{transform:scale(1.05);}
-}
+button:hover{ transform:scale(1.05); }
 
 .log{
-    margin-top:20px;
+    margin-top:15px;
     max-height:150px;
     overflow-y:auto;
     font-size:14px;
@@ -83,13 +68,19 @@ button:hover{
 
 <body>
 
-<h1>✨ スマホ風ガチャ ✨</h1>
+<h1>✨ 本格スマホ風ガチャ ✨</h1>
 
-<div id="result" class="gacha-box">
-ボタンを押してガチャ！
+<div class="status">
+💎 所持石：<span id="stones"></span>
 </div>
 
-<button onclick="drawGacha()">ガチャを引く</button>
+<div class="gacha-box" id="result">
+ここに結果が表示されます
+</div>
+
+<button class="single" onclick="singleDraw()">単発ガチャ（50石）</button>
+<button class="ten" onclick="tenDraw()">🔥10連ガチャ（500石）</button>
+<button class="reset" onclick="resetStones()">🔄 石を初期値に戻す</button>
 
 <div class="log" id="log"></div>
 
@@ -101,30 +92,91 @@ const characters=[
     {name:"村人A",rarity:"N",rate:50}
 ];
 
-function drawGacha(){
-    const resultBox=document.getElementById("result");
-    resultBox.className="gacha-box";
-    resultBox.textContent="演出中...";
+const INITIAL_STONES = 500;
+const SINGLE_COST = 50;
+const TEN_COST = 500;
 
-    setTimeout(()=>{
-        let rand=Math.random()*100;
-        let sum=0;
-        let selected;
+let stones = localStorage.getItem("stones");
+if(stones === null){
+    stones = INITIAL_STONES;
+}else{
+    stones = parseInt(stones);
+}
+updateStoneDisplay();
 
-        for(let char of characters){
-            sum+=char.rate;
-            if(rand<=sum){
-                selected=char;
-                break;
-            }
+function updateStoneDisplay(){
+    document.getElementById("stones").textContent = stones;
+    localStorage.setItem("stones", stones);
+}
+
+function getRandomCharacter(){
+    let rand=Math.random()*100;
+    let sum=0;
+    for(let char of characters){
+        sum+=char.rate;
+        if(rand<=sum){
+            return char;
         }
+    }
+}
 
-        resultBox.textContent=selected.rarity+"： "+selected.name;
-        resultBox.classList.add("rare-"+selected.rarity);
+function singleDraw(){
+    if(stones < SINGLE_COST){
+        alert("石が足りません！");
+        return;
+    }
 
-        const log=document.getElementById("log");
-        log.innerHTML="▶ "+selected.rarity+"： "+selected.name+"<br>"+log.innerHTML;
-    },1000);
+    stones -= SINGLE_COST;
+    updateStoneDisplay();
+
+    let result = getRandomCharacter();
+    showResults([result]);
+}
+
+function tenDraw(){
+    if(stones < TEN_COST){
+        alert("石が足りません！");
+        return;
+    }
+
+    stones -= TEN_COST;
+    updateStoneDisplay();
+
+    let results = [];
+    for(let i=0;i<10;i++){
+        results.push(getRandomCharacter());
+    }
+
+    showResults(results);
+}
+
+function showResults(results){
+    const resultBox = document.getElementById("result");
+    resultBox.innerHTML="";
+
+    results.forEach(r=>{
+        const div=document.createElement("div");
+        div.className="result-item "+r.rarity;
+        div.textContent=r.rarity+"： "+r.name;
+        resultBox.appendChild(div);
+    });
+
+    if(results.some(r=>r.rarity==="SSR")){
+        resultBox.style.boxShadow="0 0 40px gold";
+    }else{
+        resultBox.style.boxShadow="0 0 20px rgba(0,0,0,0.4)";
+    }
+
+    const log=document.getElementById("log");
+    log.innerHTML="▶ "+results.map(r=>r.rarity).join(", ")+"<br>"+log.innerHTML;
+}
+
+function resetStones(){
+    if(confirm("本当に石を初期値に戻しますか？")){
+        stones = INITIAL_STONES;
+        updateStoneDisplay();
+        alert("石を初期値に戻しました！");
+    }
 }
 </script>
 
